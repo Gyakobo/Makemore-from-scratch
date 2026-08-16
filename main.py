@@ -1,10 +1,10 @@
 import torch
+import matplotlib.pyplot as plt
 
 words = open("names.txt", "r").read().splitlines()
 
-min_letters = min(len(w) for w in words)
-max_letters = max(len(w) for w in words)
-
+# Rudimentary approach
+"""
 b = {}
 for word in words[:]:
     chs = ["<S>"] + list(word) + ["<E>"]
@@ -14,5 +14,31 @@ for word in words[:]:
         b[bigram] = (
             b.get(bigram, 0) + 1
         )  # Technical b.get(bigram, 0) <=> b[bigram] without the safe guard 0
+"""
 
-sorted(b.items(), key=lambda kv: kv[1])
+
+# Another better approach
+N = torch.zeros((27, 27), dtype=torch.int32)
+
+# All the available letters from the text file dataset
+chars = sorted(list(set("".join(words))))
+stoi = {s: i + 1 for i, s in enumerate(chars)}
+stoi["."] = 0
+itos = {i: s for s, i in stoi.items()}
+
+for word in words:
+    chs = ["."] + list(word) + ["."]
+    for ch1, ch2 in zip(chs, chs[1:]):
+        ix1 = stoi[ch1]
+        ix2 = stoi[ch2]
+        N[ix1, ix2] += 1
+
+plt.figure(figsize=(16, 16))
+plt.imshow(N, cmap="Blues")
+for i in range(27):
+    for j in range(27):
+        chstr = itos[i] + itos[j]
+        plt.text(j, i, chstr, ha="center", va="bottom", color="gray")
+        plt.text(j, i, N[i, j].item(), ha="center", va="top", color="gray")
+plt.axis("off")
+plt.show()
