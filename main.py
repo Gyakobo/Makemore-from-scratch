@@ -43,18 +43,22 @@ for i in range(27):
 # plt.axis("off")
 # plt.show()
 
-p = N[0].float()
+# p = N[0].float()
+
+# p = torch.rand(3, generator=g)
+# p = p / p.sum()
+
+P = N.float()
+P = P / P.sum(1, keepdim=True)  # Broadcast all operation
+# Basically divide [27, 27] array by a [27, 1] array
 
 g = torch.Generator().manual_seed(2147483647)
-p = torch.rand(3, generator=g)
-p = p / p.sum()
 
-for i in range(20):
+for i in range(5):
     out = []
     ix = 0
     while True:
-        p = N[ix].float()
-        p = p / p.sum()
+        p = P[ix]
         ix = torch.multinomial(p, num_samples=1, replacement=True, generator=g).item()
         out.append(itos[ix])
         if ix == 0:
