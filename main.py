@@ -40,5 +40,23 @@ for i in range(27):
         chstr = itos[i] + itos[j]
         plt.text(j, i, chstr, ha="center", va="bottom", color="gray")
         plt.text(j, i, N[i, j].item(), ha="center", va="top", color="gray")
-plt.axis("off")
-plt.show()
+# plt.axis("off")
+# plt.show()
+
+p = N[0].float()
+
+g = torch.Generator().manual_seed(2147483647)
+p = torch.rand(3, generator=g)
+p = p / p.sum()
+
+for i in range(20):
+    out = []
+    ix = 0
+    while True:
+        p = N[ix].float()
+        p = p / p.sum()
+        ix = torch.multinomial(p, num_samples=1, replacement=True, generator=g).item()
+        out.append(itos[ix])
+        if ix == 0:
+            break
+    print("".join(out))
