@@ -54,6 +54,7 @@ P = P / P.sum(1, keepdim=True)  # Broadcast all operation
 
 g = torch.Generator().manual_seed(2147483647)
 
+"""
 for i in range(5):
     out = []
     ix = 0
@@ -64,3 +65,29 @@ for i in range(5):
         if ix == 0:
             break
     print("".join(out))
+"""
+
+# 1) GOAL: So basically our main goal is to maximize the likelihood!
+#   of the data w.r.t model parameters (statistical modeling)
+# 2) equivalent to maximizing the log likelihood (because log is monotonic)
+# 3) equivalent to minimizing the negative log likelihood
+# 4) log(a*b*c) = log(a) + log(b) + log(c)
+
+
+log_likelihood = 0
+n = 0
+for w in ["andrejq"]:
+    chs = ["."] + list(w) + ["."]
+    for ch1, ch2 in zip(chs, chs[1:]):
+        ix1 = stoi[ch1]
+        ix2 = stoi[ch2]
+        prob = P[ix1, ix2]
+        logprob = torch.log(prob)
+        log_likelihood += logprob
+        n += 1
+        # print(f"{ch1}{ch2}: {prob:.4f} {logprob:.4f}")
+
+print(f"{log_likelihood=}")
+nll = -log_likelihood
+print(f"{nll=}")
+print(f"{nll/n=}")
