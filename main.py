@@ -48,7 +48,9 @@ for i in range(27):
 # p = torch.rand(3, generator=g)
 # p = p / p.sum()
 
-P = N.float()
+P = (
+    N + 1
+).float()  # In order to eliminate the probability of encountering unique name you smooth the model a adding a `1` to the N probabilities
 P = P / P.sum(1, keepdim=True)  # Broadcast all operation
 # Basically divide [27, 27] array by a [27, 1] array
 
