@@ -114,4 +114,6 @@ print(f"{ys=}")
 import torch.nn.functional as F
 
 xenc = F.one_hot(xs, num_classes=27).float()
-xenc.dtype
+
+W = torch.randn((27, 27))
+xenc @ W  # Matrix multiplicator in PyTorch, (5, 27) @ (27, 27) => ANS: (5, 27)
