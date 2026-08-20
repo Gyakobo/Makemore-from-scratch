@@ -1,5 +1,6 @@
-words = open("names.txt", "r").read().splitlines()
+import torch
 
+words = open("names.txt", "r").read().splitlines()
 
 """
 Here basically you're storing the information in a dictionary,
@@ -17,6 +18,17 @@ for w in words:
 # sorted(b.items(), key=lambda kv: -kv[1])
 # print(f"{b=}")
 
+
 """
 Here is a rendition of the same approach only in a 2D tensor array
 """
+N = torch.zeros((28, 8), dtype=torch.int32)
+
+sorted(list(set(''.join(words)))) # Would give us the exact alphabet used in the training dataset
+
+stoi = { for i in range()}
+
+for w in words:
+    chs = ["."] + list(w) + ["."]
+    for ch1, ch2 in zip(chs, chs[1:]):
+
