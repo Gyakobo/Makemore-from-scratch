@@ -47,10 +47,10 @@ g = torch.Generator().manual_seed(2147483647)
 #     p, num_samples=1, replacement=True, generator=g
 # ).item()  # Get value from the tensor, tensor([3]).item() -> 3
 
-ix = 0
-P = N.float()  # Adjusts the null values to avoid .inf
-P /= torch.sum(P, dim=1, keepdim=True)  # Probability of each element by row
+P = (N + 1).float()  # Adjusts the null values to avoid .inf
+P /= P.sum(dim=1, keepdim=True)  # Probability of each element by row
 
+ix = 0
 while True:
     p = P[ix]
     ix = torch.multinomial(p, num_samples=1, replacement=True, generator=g).item()
@@ -76,10 +76,19 @@ plt.show()
 Now let's add loss function now 
 """
 # Let's first look at the probability of each binomial character
+log_likelihood = 0.0
+n = 0
 for w in words[:3]:
     chs = ["."] + list(w) + ["."]
     for ch1, ch2 in zip(chs, chs[1:]):
         ix1 = stoi[ch1]
-        ix2 = stoi[ch1]
+        ix2 = stoi[ch2]
         prob = P[ix1, ix2]
-        print(f"{ch1}{ch2}: {prob:.4f}")
+        logprob = torch.log(prob)
+        log_likelihood += logprob
+        n += 1
+        print(f"{ch1}{ch2}: {prob:.4f} {logprob:.4f}")
+print(f"{log_likelihood=}")
+nll = -log_likelihood
+print(f"{nll=}")
+print(f"normalized nnl: {nll/n}")
