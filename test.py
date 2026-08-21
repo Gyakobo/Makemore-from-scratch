@@ -102,17 +102,18 @@ Let's now plug in a neural network to this
 # Create a training set of all the bigrams(x, y)
 xs, ys = [], []
 
-for w in words[:1]:
+for w in words:
     chs = ["."] + list(w) + ["."]
     for ch1, ch2 in zip(chs, chs[1:]):
         ix1 = stoi[ch1]
         ix2 = stoi[ch2]
-        print(ch1, ch2)
+        # print(ch1, ch2)
         xs.append(ix1)
         ys.append(ix2)
 
 xs = torch.tensor(xs)
 ys = torch.tensor(ys)
+num = xs.nelement()
 print(f"{xs=}")
 print(f"{ys=}")
 
@@ -120,29 +121,51 @@ W = torch.randn(
     (27, 27), generator=g, requires_grad=True
 )  # Becomes technically the new log(`N`) matrix, and when exponentiated becomes the `N` matrix
 
-# Forward Pass
-xenc = F.one_hot(xs, num_classes=27).float()
-logits = xenc @ W  # predictz log-counts
-# These last two lines are called the SOFT MAX
-counts = logits.exp()  # counts, equivalent to the N matrix
-probs = counts / counts.sum(1, keepdim=True)  # probabilities for next character
+for k in range(100):
+    # Forward Pass
+    xenc = F.one_hot(xs, num_classes=27).float()
+    logits = xenc @ W  # predictz log-counts
+    # These last two lines are called the SOFT MAX
+    counts = logits.exp()  # counts, equivalent to the N matrix
+    probs = counts / counts.sum(1, keepdim=True)  # probabilities for next character
+    """
+    So this is how we calculate the loss/nlls
+    xs = tensor([0, 5, 13, 13, 1])
+    ys = tensor([5, 13, 13, 1, 0])
+
+    probs[0, 5], probs[1, 13], probs[2, 13], probs[3, 1], probs[4, 0]
+    """
+    loss = -probs[torch.arange(num), ys].log().mean() + 0.01 * (W**2).mean()
+    # + Regularization(akin to what we did for `P = (N + 1).float()`)
+    print(loss.item())
+
+    # Backward pass
+    W.grad = None  # Reset the gradients or set them all to ZERO
+    loss.backward()  # sets the weight to all the intermediates all the way to `W`
+
+    # update
+    W.data += -100 * W.grad
+
 """
-So this is how we calculate the loss/nlls
-xs = tensor([0, 5, 13, 13, 1])
-ys = tensor([5, 13, 13, 1, 0])
-
-probs[0, 5], probs[1, 13], probs[2, 13], probs[3, 1], probs[4, 0]
+Finally, sample from the `neural net` model
 """
-loss = (
-    -probs[torch.arange(5), ys].log().mean() + 0.01 * (W**2).mean()
-)  # + Regularization(akin to what we did for `P = (N + 1).float()`)
 
-# Backward pass
-W.grad = None  # Reset the gradients or set them all to ZERO
-loss.backward()  # sets the weight to all the intermediates all the way to `W`
+for i in range(5):
+    out = []
+    ix = 0
+    while True:
+        # Before
+        # p = P[ix]
+        xenc = F.one_hot(torch.tensor([ix]), num_classes=27).float()
+        logits = xenc @ W  # Predict log-counts
+        counts = logits.exp()  # counts, equivalent to N
+        p = counts / counts.sum(1, keepdim=True)  # probabilities for next character
 
-# update
-W.data += -0.1 * W.grad
+        ix = torch.multinomial(p, num_samples=1, replacement=True, generator=g).item()
+        out.append(itos[ix])
+        if ix == 0:
+            break
+    print("".join(out))
 
 """
 Helper function to understand this new framework -> Included for practise reasons
