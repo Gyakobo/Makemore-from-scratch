@@ -139,7 +139,7 @@ for i in range(5):
     print("input to the neural net:", x)
     print("output probabilities from the neural net:", probs[i])
     print("label (actual next character):", y)
-    y = probs[i, y]
+    p = probs[i, y]
     print("probablity assigned by the net to the correct character:", p.item())
     logp = torch.log(p)
     print("log likelihood:", logp.item())
