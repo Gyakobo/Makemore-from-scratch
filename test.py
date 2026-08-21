@@ -116,7 +116,9 @@ ys = torch.tensor(ys)
 print(f"{xs=}")
 print(f"{ys=}")
 
-W = torch.randn((27, 27), generator=g, requires_grad=True)
+W = torch.randn(
+    (27, 27), generator=g, requires_grad=True
+)  # Becomes technically the new log(`N`) matrix, and when exponentiated becomes the `N` matrix
 
 # Forward Pass
 xenc = F.one_hot(xs, num_classes=27).float()
@@ -131,7 +133,9 @@ ys = tensor([5, 13, 13, 1, 0])
 
 probs[0, 5], probs[1, 13], probs[2, 13], probs[3, 1], probs[4, 0]
 """
-loss = -probs[torch.arange(5), ys].log().mean()
+loss = (
+    -probs[torch.arange(5), ys].log().mean() + 0.01 * (W**2).mean()
+)  # + Regularization(akin to what we did for `P = (N + 1).float()`)
 
 # Backward pass
 W.grad = None  # Reset the gradients or set them all to ZERO
