@@ -1,5 +1,6 @@
 import torch
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
 
 words = open("names.txt", "r").read().splitlines()
 
@@ -87,11 +88,11 @@ for w in words[:3]:
         logprob = torch.log(prob)
         log_likelihood += logprob
         n += 1
-        print(f"{ch1}{ch2}: {prob:.4f} {logprob:.4f}")
-print(f"{log_likelihood=}")
+        # print(f"{ch1}{ch2}: {prob:.4f} {logprob:.4f}")
+# print(f"{log_likelihood=}")
 nll = -log_likelihood
-print(f"{nll=}")
-print(f"normalized nnl: {nll/n}")
+# print(f"{nll=}")
+# print(f"normalized nnl: {nll/n}")
 
 
 """
@@ -112,3 +113,15 @@ for w in words[:1]:
 
 xs = torch.tensor(xs)
 ys = torch.tensor(ys)
+print(f"{xs=}")
+print(f"{ys=}")
+
+xenc = F.one_hot(xs, num_classes=27).float()
+yenc = F.one_hot(ys, num_classes=27).float()
+
+W = torch.randn((27, 27), generator=g)
+logits = xenc @ W  # predictz log-counts
+
+# These last two lines are called the SOFT MAX
+counts = logits.exp()  # counts, equivalent to the N matrix
+probs = counts / counts.sum(1, keepdim=True)  # probabilities for next character
