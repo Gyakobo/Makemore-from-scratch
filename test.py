@@ -116,17 +116,33 @@ ys = torch.tensor(ys)
 print(f"{xs=}")
 print(f"{ys=}")
 
+W = torch.randn((27, 27), generator=g, requires_grad=True)
+
+# Forward Pass
 xenc = F.one_hot(xs, num_classes=27).float()
-
-W = torch.randn((27, 27), generator=g)
 logits = xenc @ W  # predictz log-counts
-
 # These last two lines are called the SOFT MAX
 counts = logits.exp()  # counts, equivalent to the N matrix
 probs = counts / counts.sum(1, keepdim=True)  # probabilities for next character
+"""
+So this is how we calculate the loss/nlls
+xs = tensor([0, 5, 13, 13, 1])
+ys = tensor([5, 13, 13, 1, 0])
+
+probs[0, 5], probs[1, 13], probs[2, 13], probs[3, 1], probs[4, 0]
+"""
+loss = -probs[torch.arange(5), ys].log().mean()
+
+# Backward pass
+W.grad = None  # Reset the gradients or set them all to ZERO
+loss.backward()  # sets the weight to all the intermediates all the way to `W`
+
+# update
+W.data += -0.1 * W.grad
 
 """
-Helper function to understand this new framework
+Helper function to understand this new framework -> Included for practise reasons
+"""
 """
 nlls = torch.zeros(5)
 for i in range(5):
@@ -148,3 +164,4 @@ for i in range(5):
     nlls[i] = nll
 print("========")
 print("average negative log likelihood, i.e. loss =", nlls.mean().item())
+"""
