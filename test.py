@@ -117,7 +117,6 @@ print(f"{xs=}")
 print(f"{ys=}")
 
 xenc = F.one_hot(xs, num_classes=27).float()
-yenc = F.one_hot(ys, num_classes=27).float()
 
 W = torch.randn((27, 27), generator=g)
 logits = xenc @ W  # predictz log-counts
@@ -125,3 +124,27 @@ logits = xenc @ W  # predictz log-counts
 # These last two lines are called the SOFT MAX
 counts = logits.exp()  # counts, equivalent to the N matrix
 probs = counts / counts.sum(1, keepdim=True)  # probabilities for next character
+
+"""
+Helper function to understand this new framework
+"""
+nlls = torch.zeros(5)
+for i in range(5):
+    # i-th bigram:
+    x = xs[i].item()  # input character index
+    y = ys[i].item()  # label character index
+
+    print("-------")
+    print(f"bigram example {i + 1}: {itos[x]}{itos[y]} (indexes {x}, {y})")
+    print("input to the neural net:", x)
+    print("output probabilities from the neural net:", probs[i])
+    print("label (actual next character):", y)
+    y = probs[i, y]
+    print("probablity assigned by the net to the correct character:", p.item())
+    logp = torch.log(p)
+    print("log likelihood:", logp.item())
+    nll = -logp
+    print("negative log likelihood:", nll.item())
+    nlls[i] = nll
+print("========")
+print("average negative log likelihood, i.e. loss =", nlls.mean().item())
