@@ -47,7 +47,7 @@ g = torch.Generator().manual_seed(2147483647)
 #     p, num_samples=1, replacement=True, generator=g
 # ).item()  # Get value from the tensor, tensor([3]).item() -> 3
 
-P = (N + 1).float()  # Adjusts the null values to avoid .inf
+P = (N + 1).float()  # Adjusts the null values to avoid .inf - model smoothing
 P /= P.sum(dim=1, keepdim=True)  # Probability of each element by row
 
 ix = 0
@@ -92,3 +92,23 @@ print(f"{log_likelihood=}")
 nll = -log_likelihood
 print(f"{nll=}")
 print(f"normalized nnl: {nll/n}")
+
+
+"""
+Let's now plug in a neural network to this 
+"""
+
+# Create a training set of all the bigrams(x, y)
+xs, ys = [], []
+
+for w in words[:1]:
+    chs = ["."] + list(w) + ["."]
+    for ch1, ch2 in zip(chs, chs[1:]):
+        ix1 = stoi[ch1]
+        ix2 = stoi[ch2]
+        print(ch1, ch2)
+        xs.append(ix1)
+        ys.append(ix2)
+
+xs = torch.tensor(xs)
+ys = torch.tensor(ys)
