@@ -13,7 +13,7 @@ itos = {i: c for c, i in stoi.items()}
 # build the dataset
 
 block_size = (
-    10  # context length: how many characters do we take to predict the next one?
+    3  # context length: how many characters do we take to predict the next one?
 )
 X, Y = [], []
 for w in words[:5]:
@@ -30,3 +30,14 @@ X = torch.tensor(X)
 Y = torch.tensor(Y)
 print(f"{X=}")
 print(f"{Y=}")
+
+C = torch.randn((27, 2))
+# F.one_hot(torch.tensor(5), num_classes=27).float()
+
+W1 = torch.randn((6, 100))
+b1 = torch.randn(100)
+emb = C[X]
+
+# emb @ W + b1 (incompatible)
+
+torch.cat(torch.unbind(emb, 1), 1)
