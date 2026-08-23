@@ -1,3 +1,4 @@
+from itertools import count
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
@@ -40,4 +41,12 @@ emb = C[X]
 
 # emb @ W + b1 (incompatible)
 
-torch.cat(torch.unbind(emb, 1), 1)
+# torch.cat(torch.unbind(emb, 1), 1)
+h = torch.tanh(emb.view(-1, 6) @ W1 + b1)
+
+W2 = torch.randn((100, 27))
+b2 = torch.randn(27)
+
+logits = h @ W2 + b2
+counts = logits.exp()
+prob = counts / counts.sum(1, keepdim=True)
