@@ -52,4 +52,5 @@ counts = logits.exp()
 prob = counts / counts.sum(1, keepdim=True)
 
 # Finally Testing the probabities with Y
-print(prob[torch.arange(32), Y])
+loss = prob[torch.arange(32), Y].log().mean()
+print(f"{loss=}")
