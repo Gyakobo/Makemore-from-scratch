@@ -13,7 +13,7 @@ itos = {i: c for c, i in stoi.items()}
 # build the dataset
 
 block_size = (
-    3  # context length: how many characters do we take to predict the next one?
+    10  # context length: how many characters do we take to predict the next one?
 )
 X, Y = [], []
 for w in words[:5]:
@@ -28,3 +28,5 @@ for w in words[:5]:
 
 X = torch.tensor(X)
 Y = torch.tensor(Y)
+print(f"{X=}")
+print(f"{Y=}")
