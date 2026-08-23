@@ -50,3 +50,6 @@ b2 = torch.randn(27)
 logits = h @ W2 + b2
 counts = logits.exp()
 prob = counts / counts.sum(1, keepdim=True)
+
+# Finally Testing the probabities with Y
+print(prob[torch.arange(32), Y])
