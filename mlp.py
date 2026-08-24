@@ -27,30 +27,25 @@ for w in words[:5]:
         print("".join(itos[i] for i in context), "--->", itos[ix])
         context = context[1:] + [ix]  # crop and append
 
-X = torch.tensor(X)
-Y = torch.tensor(Y)
+X = torch.tensor(X)  # (32, 3)
+Y = torch.tensor(Y)  # (32, )
 print(f"{X=}")
 print(f"{Y=}")
 
-C = torch.randn((27, 2))
-# F.one_hot(torch.tensor(5), num_classes=27).float()
+g = torch.Generator().manual_seed(2147483647)  # for reproducibility
+C = torch.randn((27, 2), generator=g)  # A 2D vector for each letter
+W1 = torch.randn((6, 100), generator=g)
+b1 = torch.randn(100, generator=g)
+W2 = torch.randn((100, 27), generator=g)
+b2 = torch.randn(27, generator=g)
 
-W1 = torch.randn((6, 100))
-b1 = torch.randn(100)
+
 emb = C[X]
-
-# emb @ W + b1 (incompatible)
-
-# torch.cat(torch.unbind(emb, 1), 1)
-h = torch.tanh(emb.view(-1, 6) @ W1 + b1)
-
-W2 = torch.randn((100, 27))
-b2 = torch.randn(27)
-
+# emb @ W + b1 (incompatible) => torch.cat(torch.unbind(emb, 1), 1)
+h = torch.tanh(emb.view(-1, 6) @ W1 + b1)  # (32, 100)
 logits = h @ W2 + b2
-counts = logits.exp()
-prob = counts / counts.sum(1, keepdim=True)
-
-# Finally Testing the probabities with Y
-loss = prob[torch.arange(32), Y].log().mean()
+# counts = logits.exp()
+# prob = counts / counts.sum(1, keepdim=True)
+# loss = -prob[torch.arange(32), Y].log().mean()
+loss = F.cross_entropy(logits, Y)
 print(f"{loss=}")
