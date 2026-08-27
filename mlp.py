@@ -85,7 +85,7 @@ for i in range(1000):
     """
     Track stats
     """
-    lri.append(lr)
+    lri.append(lr[i])
     lossi.append(loss.item())
 
 plt.plot(lri, lossi)
