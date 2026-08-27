@@ -43,10 +43,10 @@ Xdev, Ydev = build_dataset(words[n1:n2])  # Dev/Validation split
 Xte, Yte = build_dataset(words[n2:])  # Testing split
 
 g = torch.Generator().manual_seed(2147483647)  # for reproducibility
-C = torch.randn((27, 2), generator=g)  # A 2D vector for each letter
-W1 = torch.randn((6, 300), generator=g)
-b1 = torch.randn(300, generator=g)
-W2 = torch.randn((300, 27), generator=g)
+C = torch.randn((27, 10), generator=g)  # A 2D vector for each letter
+W1 = torch.randn((30, 200), generator=g)
+b1 = torch.randn(200, generator=g)
+W2 = torch.randn((200, 27), generator=g)
 b2 = torch.randn(27, generator=g)
 parameters = [C, W1, b1, W2, b2]
 
@@ -60,7 +60,7 @@ lri = []
 lossi = []
 stepi = []
 
-for i in range(30000):
+for i in range(50000):
     """
     Minibatch construct
     """
@@ -71,7 +71,7 @@ for i in range(30000):
     """
     emb = C[Xtr[ix]]  # (32, 3, 2)
     # emb @ W + b1 (incompatible) => torch.cat(torch.unbind(emb, 1), 1)
-    h = torch.tanh(emb.view(-1, 6) @ W1 + b1)  # (32, 100)
+    h = torch.tanh(emb.view(-1, 30) @ W1 + b1)  # (32, 100)
     logits = h @ W2 + b2  # (32, 27)
     # counts = logits.exp()
     # prob = counts / counts.sum(1, keepdim=True)
@@ -90,7 +90,7 @@ for i in range(30000):
     Update
     """
     # lr = lrs[i]
-    lr = 0.001
+    lr = 0.1
     for p in parameters:
         p.data += -lr * p.grad
 
