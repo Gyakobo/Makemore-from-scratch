@@ -40,10 +40,16 @@ W2 = torch.randn((100, 27), generator=g)
 b2 = torch.randn(27, generator=g)
 parameters = [C, W1, b1, W2, b2]
 
+lre = torch.linspace(-3, 0, 1000)
+lrs = 10**lre
+
 for p in parameters:
     p.requires_grad = True
 
-for _ in range(100):
+lri = []
+lossi = []
+
+for i in range(1000):
     """
     Minibatch construct
     """
@@ -72,5 +78,15 @@ for _ in range(100):
     """
     Update
     """
+    lr = lrs[i]
     for p in parameters:
-        p.data += -0.1 * p.grad
+        p.data += -lr * p.grad
+
+    """
+    Track stats
+    """
+    lri.append(lr)
+    lossi.append(loss.item())
+
+plt.plot(lri, lossi)
+plt.show()
