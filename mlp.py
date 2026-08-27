@@ -2,6 +2,7 @@ from itertools import count
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
+import random
 
 words = open("names.txt", "r").read().splitlines()
 
@@ -11,26 +12,35 @@ stoi = {c: i + 1 for i, c in enumerate(chars)}
 stoi["."] = 0
 itos = {i: c for c, i in stoi.items()}
 
+
 # build the dataset
+def build_dataset(words):
+    block_size = (
+        3  # context length: how many characters do we take to predict the next one?
+    )
+    X, Y = [], []
+    for w in words:
+        print(w)
+        context = [0] * block_size
+        for ch in w + ".":
+            ix = stoi[ch]
+            X.append(context)
+            Y.append(ix)
+            # print("".join(itos[i] for i in context), "--->", itos[ix])
+            context = context[1:] + [ix]  # crop and append
+    X = torch.tensor(X)  # (32, 3)
+    Y = torch.tensor(Y)  # (32, )
+    print(X.shape, Y.shape)
+    return X, Y
 
-block_size = (
-    3  # context length: how many characters do we take to predict the next one?
-)
-X, Y = [], []
-for w in words:
-    print(w)
-    context = [0] * block_size
-    for ch in w + ".":
-        ix = stoi[ch]
-        X.append(context)
-        Y.append(ix)
-        # print("".join(itos[i] for i in context), "--->", itos[ix])
-        context = context[1:] + [ix]  # crop and append
 
-X = torch.tensor(X)  # (32, 3)
-Y = torch.tensor(Y)  # (32, )
-# print(f"{X=}")
-# print(f"{Y=}")
+random.seed(42)
+random.shuffle(words)
+n1 = int(0.8 * len(words))
+n2 = int(0.9 * len(words))
+Xtr, Ytr = build_dataset(words[:n1])  # Training split
+Xdev, Ydev = build_dataset(words[n1:n2])  # Dev/Validation split
+Xte, Yte = build_dataset(words[n2:])  # Testing split
 
 g = torch.Generator().manual_seed(2147483647)  # for reproducibility
 C = torch.randn((27, 2), generator=g)  # A 2D vector for each letter
@@ -49,7 +59,7 @@ for p in parameters:
 lri = []
 lossi = []
 
-for i in range(1000):
+for i in range(10000):
     """
     Minibatch construct
     """
@@ -66,8 +76,8 @@ for i in range(1000):
     # prob = counts / counts.sum(1, keepdim=True)
     # loss = -prob[torch.arange(32), Y].log().mean()
     loss = F.cross_entropy(logits, Y[ix])
+    # print(loss.item())
 
-    print(loss.item())
     """
     Backward Pass
     """
@@ -78,15 +88,25 @@ for i in range(1000):
     """
     Update
     """
-    lr = lrs[i]
+    # lr = lrs[i]
+    lr = 0.01
     for p in parameters:
         p.data += -lr * p.grad
 
     """
     Track stats
     """
-    lri.append(lr[i])
-    lossi.append(loss.item())
+    # lri.append(lre[i])
+    # lossi.append(loss.item())
 
-plt.plot(lri, lossi)
-plt.show()
+# plt.plot(lri, lossi)
+# plt.show()
+
+"""
+Visualize result
+"""
+emb = C[X]  # (32, 3, 2)
+h = torch.tanh(emb.view(-1, 6) @ W1 + b1)  # (32, 100)
+logits = h @ W2 + b2  # (32, 27)
+loss = F.cross_entropy(logits, Y)
+print(f"{loss=}")
