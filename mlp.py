@@ -59,23 +59,23 @@ for p in parameters:
 lri = []
 lossi = []
 
-for i in range(10000):
+for i in range(30000):
     """
     Minibatch construct
     """
-    ix = torch.randint(0, X.shape[0], (32,))
+    ix = torch.randint(0, Xtr.shape[0], (32,))
 
     """
     Forward Pass
     """
-    emb = C[X[ix]]  # (32, 3, 2)
+    emb = C[Xtr[ix]]  # (32, 3, 2)
     # emb @ W + b1 (incompatible) => torch.cat(torch.unbind(emb, 1), 1)
     h = torch.tanh(emb.view(-1, 6) @ W1 + b1)  # (32, 100)
     logits = h @ W2 + b2  # (32, 27)
     # counts = logits.exp()
     # prob = counts / counts.sum(1, keepdim=True)
     # loss = -prob[torch.arange(32), Y].log().mean()
-    loss = F.cross_entropy(logits, Y[ix])
+    loss = F.cross_entropy(logits, Ytr[ix])
     # print(loss.item())
 
     """
@@ -89,7 +89,7 @@ for i in range(10000):
     Update
     """
     # lr = lrs[i]
-    lr = 0.01
+    lr = 0.1
     for p in parameters:
         p.data += -lr * p.grad
 
@@ -105,8 +105,8 @@ for i in range(10000):
 """
 Visualize result
 """
-emb = C[X]  # (32, 3, 2)
+emb = C[Xdev]  # (32, 3, 2)
 h = torch.tanh(emb.view(-1, 6) @ W1 + b1)  # (32, 100)
 logits = h @ W2 + b2  # (32, 27)
-loss = F.cross_entropy(logits, Y)
+loss = F.cross_entropy(logits, Ydev)
 print(f"{loss=}")
