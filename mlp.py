@@ -12,15 +12,16 @@ stoi = {c: i + 1 for i, c in enumerate(chars)}
 stoi["."] = 0
 itos = {i: c for c, i in stoi.items()}
 
+block_size = (
+    3  # context length: how many characters do we take to predict the next one?
+)
+
 
 # build the dataset
 def build_dataset(words):
-    block_size = (
-        3  # context length: how many characters do we take to predict the next one?
-    )
     X, Y = [], []
     for w in words:
-        print(w)
+        # print(w)
         context = [0] * block_size
         for ch in w + ".":
             ix = stoi[ch]
@@ -90,7 +91,7 @@ for i in range(50000):
     Update
     """
     # lr = lrs[i]
-    lr = 0.1
+    lr = 0.01
     for p in parameters:
         p.data += -lr * p.grad
 
@@ -107,13 +108,33 @@ for i in range(50000):
 Visualize results
 """
 emb = C[Xtr]  # (32, 3, 2)
-h = torch.tanh(emb.view(-1, 6) @ W1 + b1)  # (32, 100)
+h = torch.tanh(emb.view(-1, 30) @ W1 + b1)  # (32, 100)
 logits = h @ W2 + b2  # (32, 27)
 loss = F.cross_entropy(logits, Ytr)
 print(f"{loss=}")
 
 emb = C[Xdev]  # (32, 3, 2)
-h = torch.tanh(emb.view(-1, 6) @ W1 + b1)  # (32, 100)
+h = torch.tanh(emb.view(-1, 30) @ W1 + b1)  # (32, 100)
 logits = h @ W2 + b2  # (32, 27)
 loss = F.cross_entropy(logits, Ydev)
 print(f"{loss=}")
+
+"""
+Final step: Sampling for the model
+"""
+g = torch.Generator().manual_seed(2147483647 + 10)
+for _ in range(20):
+    out = []
+    context = [0] * block_size  # initialize with all ...
+    while True:
+        emb = C[torch.tensor([context])]  # (1, block_size, d)
+        h = torch.tanh(emb.view(1, -1) @ W1 + b1)
+        logits = h @ W2 + b2
+        probs = F.softmax(logits, dim=1)
+        ix = torch.multinomial(probs, num_samples=1, generator=g).item()
+        context = context[1:] + [ix]
+        out.append(ix)
+        if ix == 0:
+            break
+
+    print("".join(itos[i] for i in out))
