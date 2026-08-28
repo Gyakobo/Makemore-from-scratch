@@ -115,8 +115,8 @@ for i in range(max_steps):
         print(f"{i:7d}/{max_steps:7d}: {loss.item():.4f}")
     lossi.append(loss.log10().item())
 
-plt.plot(lossi)
-plt.show()
+# plt.plot(lossi)
+# plt.show()
 
 """
 Visualize results
