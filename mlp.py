@@ -83,7 +83,8 @@ for i in range(max_steps):
     """
     Forward Pass
     """
-    emb = C[Xb]  # (32, 3, 2)
+    emb = C[Xb]  # (32, 3, 2) embed the characters into vectors
+    """
     # emb @ W + b1 (incompatible) => torch.cat(torch.unbind(emb, 1), 1)
     h = torch.tanh(emb.view(-1, n_embd * block_size) @ W1 + b1)  # (32, 100)
     logits = h @ W2 + b2  # (32, 27)
@@ -91,7 +92,12 @@ for i in range(max_steps):
     # prob = counts / counts.sum(1, keepdim=True)
     # loss = -prob[torch.arange(32), Y].log().mean()
     loss = F.cross_entropy(logits, Ytr[ix])
-    # print(loss.item())
+    """
+    embcat = emb.view(emb.shape[0], -1)  # concatenate the vectors
+    hpreact = embcat @ W1 + b1  # hidden layer pre-activation
+    h = torch.tanh(hpreact)  # hidden layer
+    logits = h @ W2 + b2  # output layer
+    loss = F.cross_entropy(logits, Yb)  # loss function
 
     """
     Backward Pass
@@ -114,7 +120,6 @@ for i in range(max_steps):
     if i % 10000 == 0:  # print every once in a while
         print(f"{i:7d}/{max_steps:7d}: {loss.item():.4f}")
     lossi.append(loss.log10().item())
-
 # plt.plot(lossi)
 # plt.show()
 
