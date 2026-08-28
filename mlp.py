@@ -12,7 +12,7 @@ stoi = {c: i + 1 for i, c in enumerate(chars)}
 stoi["."] = 0
 itos = {i: c for c, i in stoi.items()}
 vocab_size = len(
-    chars
+    stoi
 )  # Size of 'vocabulary'/quantity of all the possible/usable characters
 
 block_size = (
@@ -68,22 +68,24 @@ parameters = [C, W1, b1, W2, b2]
 for p in parameters:
     p.requires_grad = True
 
-lri = []
-lossi = []
-stepi = []
 
-for i in range(50000):
+max_steps = 200000
+batch_size = 32
+lossi = []
+
+for i in range(max_steps):
     """
     Minibatch construct
     """
-    ix = torch.randint(0, Xtr.shape[0], (32,))
+    ix = torch.randint(0, Xtr.shape[0], (batch_size,), generator=g)
+    Xb, Yb = Xtr[ix], Ytr[ix]  # batch X, Y - just simpler notation
 
     """
     Forward Pass
     """
-    emb = C[Xtr[ix]]  # (32, 3, 2)
+    emb = C[Xb]  # (32, 3, 2)
     # emb @ W + b1 (incompatible) => torch.cat(torch.unbind(emb, 1), 1)
-    h = torch.tanh(emb.view(-1, 30) @ W1 + b1)  # (32, 100)
+    h = torch.tanh(emb.view(-1, n_embd * block_size) @ W1 + b1)  # (32, 100)
     logits = h @ W2 + b2  # (32, 27)
     # counts = logits.exp()
     # prob = counts / counts.sum(1, keepdim=True)
@@ -102,33 +104,42 @@ for i in range(50000):
     Update
     """
     # lr = lrs[i]
-    lr = 0.01
+    lr = 0.1 if i < 100000 else 0.01  # step learning rate decay
     for p in parameters:
         p.data += -lr * p.grad
 
     """
     Track stats
     """
-    # lri.append(lre[i])
-    # lossi.append(loss.item())
+    if i % 10000 == 0:  # print every once in a while
+        print(f"{i:7d}/{max_steps:7d}: {loss.item():.4f}")
+    lossi.append(loss.log10().item())
 
-# plt.plot(lri, lossi)
-# plt.show()
+plt.plot(lossi)
+plt.show()
 
 """
 Visualize results
 """
-emb = C[Xtr]  # (32, 3, 2)
-h = torch.tanh(emb.view(-1, 30) @ W1 + b1)  # (32, 100)
-logits = h @ W2 + b2  # (32, 27)
-loss = F.cross_entropy(logits, Ytr)
-print(f"{loss=}")
 
-emb = C[Xdev]  # (32, 3, 2)
-h = torch.tanh(emb.view(-1, 30) @ W1 + b1)  # (32, 100)
-logits = h @ W2 + b2  # (32, 27)
-loss = F.cross_entropy(logits, Ydev)
-print(f"{loss=}")
+
+@torch.no_grad()  # this decorator disables gradient tracking
+def split_loss(split: str):
+    x, y = {
+        "train": (Xtr, Ytr),
+        "val": (Xdev, Ydev),
+        "test": (Xte, Yte),
+    }[split]
+    emb = C[x]  # (N, block_size, n_embd)
+    embcat = emb.view(emb.shape[0], -1)  # concat into (N, block_size * n_embd)
+    h = torch.tanh(embcat @ W1 + b1)  # (N, n_hidden)
+    logits = h @ W2 + b2  # (N, vocab_size)
+    loss = F.cross_entropy(logits, y)
+    print(split, loss.item())
+
+
+split_loss("train")
+split_loss("val")
 
 """
 Final step: Sampling for the model
