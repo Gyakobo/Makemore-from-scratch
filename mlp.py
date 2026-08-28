@@ -11,6 +11,9 @@ chars = sorted(list(set("".join(words))))
 stoi = {c: i + 1 for i, c in enumerate(chars)}
 stoi["."] = 0
 itos = {i: c for c, i in stoi.items()}
+vocab_size = len(
+    chars
+)  # Size of 'vocabulary'/quantity of all the possible/usable characters
 
 block_size = (
     3  # context length: how many characters do we take to predict the next one?
@@ -39,20 +42,28 @@ random.seed(42)
 random.shuffle(words)
 n1 = int(0.8 * len(words))
 n2 = int(0.9 * len(words))
-Xtr, Ytr = build_dataset(words[:n1])  # Training split
-Xdev, Ydev = build_dataset(words[n1:n2])  # Dev/Validation split
-Xte, Yte = build_dataset(words[n2:])  # Testing split
+Xtr, Ytr = build_dataset(words[:n1])  # Training split (80%)
+Xdev, Ydev = build_dataset(words[n1:n2])  # Dev/Validation split (10%)
+Xte, Yte = build_dataset(words[n2:])  # Testing split (10%)
+
+"""
+MLP revised
+"""
+n_embd = 10  # the dimensionality of the character embedding vectors. Basically the dimension per character
+n_hidden = 200  # the number of neurons in the hidden layer of the MLP
 
 g = torch.Generator().manual_seed(2147483647)  # for reproducibility
-C = torch.randn((27, 10), generator=g)  # A 2D vector for each letter
-W1 = torch.randn((30, 200), generator=g)
-b1 = torch.randn(200, generator=g)
-W2 = torch.randn((200, 27), generator=g)
-b2 = torch.randn(27, generator=g)
+C = torch.randn(
+    (vocab_size, n_embd), generator=g
+)  # A 2D vector for each letter/character
+W1 = torch.randn((n_embd * block_size, n_hidden), generator=g)
+b1 = torch.randn(n_hidden, generator=g)
+W2 = torch.randn((n_hidden, vocab_size), generator=g)
+b2 = torch.randn(vocab_size, generator=g)
 parameters = [C, W1, b1, W2, b2]
 
-lre = torch.linspace(-3, 0, 1000)
-lrs = 10**lre
+# lre = torch.linspace(-3, 0, 1000)
+# lrs = 10**lre
 
 for p in parameters:
     p.requires_grad = True
