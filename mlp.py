@@ -56,8 +56,12 @@ g = torch.Generator().manual_seed(2147483647)  # for reproducibility
 C = torch.randn(
     (vocab_size, n_embd), generator=g
 )  # A 2D vector for each letter/character
-W1 = torch.randn((n_embd * block_size, n_hidden), generator=g)
-b1 = torch.randn(n_hidden, generator=g)
+W1 = (
+    torch.randn((n_embd * block_size, n_hidden), generator=g)
+    * (5 / 3)
+    / (n_embd * block_size) ** 0.5  # W1 * (5/3) / (gain/sqrt(fan_in))
+)
+b1 = torch.randn(n_hidden, generator=g) * 0.01
 W2 = torch.randn((n_hidden, vocab_size), generator=g) * 0.01
 b2 = torch.randn(vocab_size, generator=g) * 0
 parameters = [C, W1, b1, W2, b2]
@@ -120,11 +124,19 @@ for i in range(max_steps):
     if i % 10000 == 0:  # print every once in a while
         print(f"{i:7d}/{max_steps:7d}: {loss.item():.4f}")
     lossi.append(loss.log10().item())
-# plt.plot(lossi)
-# plt.show()
+
 
 """
 Visualize results
+"""
+# plt.plot(lossi)
+# plt.show()
+plt.figure(figsize=(20, 10))
+plt.imshow(h.abs() > 0.99, cmap="gray", interpolation="nearest")
+plt.show()
+
+"""
+Test results
 """
 
 
@@ -143,8 +155,8 @@ def split_loss(split: str):
     print(split, loss.item())
 
 
-split_loss("train")
-split_loss("val")
+# split_loss("train")
+# split_loss("val")
 
 """
 Final step: Sampling for the model
