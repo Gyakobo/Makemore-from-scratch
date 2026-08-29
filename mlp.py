@@ -66,7 +66,12 @@ W2 = torch.randn((n_hidden, vocab_size), generator=g) * 0.01
 b2 = torch.randn(vocab_size, generator=g) * 0
 
 bngain = torch.ones((1, n_hidden))
-bnbias = torch.ones((1, n_hidden))
+bnbias = torch.zeros((1, n_hidden))
+bnmean_running = torch.zeros(
+    (1, n_hidden)
+)  # Because of how we initialized the W1 - in the beginning the mean will be 0
+bnstd_running = torch.ones((1, n_hidden))  # In the same fashion, the std would be 1
+
 
 parameters = [C, W1, b1, W2, b2, bngain, bnbias]  # All the utilized parameters
 
@@ -103,12 +108,16 @@ for i in range(max_steps):
     """
     embcat = emb.view(emb.shape[0], -1)  # concatenate the vectors
     hpreact = embcat @ W1 + b1  # hidden layer pre-activation
-    hpreact = (
-        bngain
-        * (hpreact - hpreact.mean(0, keepdim=True))
-        / hpreact.std(0, keepdim=True)
-        + bnbias
-    )
+
+    # Calculate the batch means
+    bnmeani = hpreact.mean(0, keepdim=True)
+    bnstdi = hpreact.std(0, keepdim=True)
+
+    hpreact = bngain * (hpreact - bnmeani) / bnstdi + bnbias
+
+    with torch.no_grad():
+        bnmean_running = (0.999 * bnmean_running) + (0.001 * bnmeani)
+        bnstd_running = (0.999 * bnstd_running) + (0.001 * bnstdi)
 
     h = torch.tanh(hpreact)  # hidden layer
     logits = h @ W2 + b2  # output layer
@@ -138,14 +147,16 @@ for i in range(max_steps):
 
 
 """
-Visualize results
+Calibrate the batch norm at the end of training 
 """
-# plt.plot(lossi)
-# plt.show()
-# ---------------------------------
-# plt.figure(figsize=(20, 10))
-# plt.imshow(h.abs() > 0.99, cmap="gray", interpolation="nearest")
-# plt.show()
+with torch.no_grad():
+    # pass the training set though
+    emb = C[Xtr]
+    embcat = emb.view(emb.shape[0], -1)
+    hpreact = embcat @ W1 + b1
+    # measure the mean/std over the entire training set
+    bnmean = hpreact.mean(0, keepdim=True)
+    bnstd = hpreact.std(0, keepdim=True)
 
 """
 Test results
@@ -162,12 +173,13 @@ def split_loss(split: str):
     emb = C[x]  # (N, block_size, n_embd)
     embcat = emb.view(emb.shape[0], -1)  # concat into (N, block_size * n_embd)
     hpreact = embcat @ W1 + b1
-    hpreact = (
-        bngain
-        * (hpreact - hpreact.mean(0, keepdim=True))
-        / hpreact.std(0, keepdim=True)
-        + bnbias
-    )
+    # hpreact = (
+    #    bngain
+    #    * (hpreact - hpreact.mean(0, keepdim=True))
+    #    / hpreact.std(0, keepdim=True)
+    #    + bnbias
+    # )
+    hpreact = bngain * (hpreact - bnmean) / bnstd + bnbias
     h = torch.tanh(embcat @ W1 + b1)  # (N, n_hidden)
     logits = h @ W2 + b2  # (N, vocab_size)
     loss = F.cross_entropy(logits, y)
@@ -196,3 +208,13 @@ for _ in range(20):
             break
 
     print("".join(itos[i] for i in out))
+
+"""
+Visualize results
+"""
+# plt.plot(lossi)
+# plt.show()
+# ---------------------------------
+# plt.figure(figsize=(20, 10))
+# plt.imshow(h.abs() > 0.99, cmap="gray", interpolation="nearest")
+# plt.show()
