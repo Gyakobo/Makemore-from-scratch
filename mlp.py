@@ -142,9 +142,10 @@ Visualize results
 """
 # plt.plot(lossi)
 # plt.show()
-plt.figure(figsize=(20, 10))
-plt.imshow(h.abs() > 0.99, cmap="gray", interpolation="nearest")
-plt.show()
+# ---------------------------------
+# plt.figure(figsize=(20, 10))
+# plt.imshow(h.abs() > 0.99, cmap="gray", interpolation="nearest")
+# plt.show()
 
 """
 Test results
@@ -160,6 +161,13 @@ def split_loss(split: str):
     }[split]
     emb = C[x]  # (N, block_size, n_embd)
     embcat = emb.view(emb.shape[0], -1)  # concat into (N, block_size * n_embd)
+    hpreact = embcat @ W1 + b1
+    hpreact = (
+        bngain
+        * (hpreact - hpreact.mean(0, keepdim=True))
+        / hpreact.std(0, keepdim=True)
+        + bnbias
+    )
     h = torch.tanh(embcat @ W1 + b1)  # (N, n_hidden)
     logits = h @ W2 + b2  # (N, vocab_size)
     loss = F.cross_entropy(logits, y)
