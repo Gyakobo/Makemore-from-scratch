@@ -107,9 +107,15 @@ for i in range(max_steps):
     loss = F.cross_entropy(logits, Ytr[ix])
     """
     embcat = emb.view(emb.shape[0], -1)  # concatenate the vectors
+
+    """
+    Linear layer
+    """
     hpreact = embcat @ W1  # + b1  # hidden layer pre-activation - got rid of the bias1
 
-    # Calculate the batch means
+    """ 
+    Batch Normalization layer
+    """
     bnmeani = hpreact.mean(0, keepdim=True)
     bnstdi = hpreact.std(0, keepdim=True)
 
@@ -119,6 +125,9 @@ for i in range(max_steps):
         bnmean_running = (0.999 * bnmean_running) + (0.001 * bnmeani)
         bnstd_running = (0.999 * bnstd_running) + (0.001 * bnstdi)
 
+    """
+    Non-linearity 
+    """
     h = torch.tanh(hpreact)  # hidden layer
     logits = h @ W2 + b2  # output layer
     loss = F.cross_entropy(logits, Yb)  # loss function
