@@ -61,7 +61,7 @@ W1 = (
     * (5 / 3)
     / (n_embd * block_size) ** 0.5  # W1 * (5/3) / (gain/sqrt(fan_in))
 )
-b1 = torch.randn(n_hidden, generator=g) * 0.01
+# b1 = torch.randn(n_hidden, generator=g) * 0.01 # Got rid of the bias as it got replaced by the `bnbias`(naturalization bias)
 W2 = torch.randn((n_hidden, vocab_size), generator=g) * 0.01
 b2 = torch.randn(vocab_size, generator=g) * 0
 
@@ -107,7 +107,7 @@ for i in range(max_steps):
     loss = F.cross_entropy(logits, Ytr[ix])
     """
     embcat = emb.view(emb.shape[0], -1)  # concatenate the vectors
-    hpreact = embcat @ W1 + b1  # hidden layer pre-activation
+    hpreact = embcat @ W1  # + b1  # hidden layer pre-activation - got rid of the bias1
 
     # Calculate the batch means
     bnmeani = hpreact.mean(0, keepdim=True)
@@ -179,7 +179,7 @@ def split_loss(split: str):
     #    / hpreact.std(0, keepdim=True)
     #    + bnbias
     # )
-    hpreact = bngain * (hpreact - bnmean) / bnstd + bnbias
+    hpreact = bngain * (hpreact - bnmean_running) / bnstd_running + bnbias
     h = torch.tanh(embcat @ W1 + b1)  # (N, n_hidden)
     logits = h @ W2 + b2  # (N, vocab_size)
     loss = F.cross_entropy(logits, y)
