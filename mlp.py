@@ -64,7 +64,11 @@ W1 = (
 b1 = torch.randn(n_hidden, generator=g) * 0.01
 W2 = torch.randn((n_hidden, vocab_size), generator=g) * 0.01
 b2 = torch.randn(vocab_size, generator=g) * 0
-parameters = [C, W1, b1, W2, b2]
+
+bngain = torch.ones((1, n_hidden))
+bnbias = torch.ones((1, n_hidden))
+
+parameters = [C, W1, b1, W2, b2, bngain, bnbias]  # All the utilized parameters
 
 # lre = torch.linspace(-3, 0, 1000)
 # lrs = 10**lre
@@ -99,6 +103,13 @@ for i in range(max_steps):
     """
     embcat = emb.view(emb.shape[0], -1)  # concatenate the vectors
     hpreact = embcat @ W1 + b1  # hidden layer pre-activation
+    hpreact = (
+        bngain
+        * (hpreact - hpreact.mean(0, keepdim=True))
+        / hpreact.std(0, keepdim=True)
+        + bnbias
+    )
+
     h = torch.tanh(hpreact)  # hidden layer
     logits = h @ W2 + b2  # output layer
     loss = F.cross_entropy(logits, Yb)  # loss function
