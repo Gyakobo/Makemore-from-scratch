@@ -90,3 +90,54 @@ layers = [
     Tanh(),
     Linear(n_hidden, vocab_size),
 ]
+
+with torch.no_grad():
+    # last layer: make less confident
+    layers[-1].weight *= 0.1
+
+    # all other layers: apply gain
+    for layer in layers[:-1]:
+        if isinstance(layer, Linear):
+            layer.weight *= 5 / 3  # because of the `tanh()` activation
+
+parameters = [C] + [
+    p for layer in layers for p in layer.parameters()
+]  # Basically all the parameters of every single layer including the C embedding
+for p in parameters:
+    p.requires_grad = True
+
+# same optimization as last time
+max_steps = 200000
+batch_size = 32
+lossi = []
+
+for i in range(max_steps):
+    # minibatch construct
+    ix = torch.randint(0, Xtr.shape[0], (batch_size,), generator=g)
+    Xb, Yb = Xtr[ix], Ytr[ix]  # batch X, Y
+
+    # forward pass
+    emb = C[Xb]  # embed the characters into vectors
+    x = emb.view(emb.shape[0], -1)  # concatenate the vectors
+    for layer in layers:
+        x = layer(x)
+    loss = F.cross_entropy(x, Yb)  # loss function
+
+    # backward pass
+    for layer in layers:
+        layer.out.retain_grad()  # AFTER_DEBUG: would take out retiain_graph
+    for p in parameters:
+        p.grad = None
+    loss.backward()
+
+    # update
+    lr = 0.1 if i < 100000 else 0.01  # step learning rate decay
+    for p in parameters:
+        p.data += -lr * p.grad
+
+    # track stats
+    if i % 10000 == 0:  # print every once in a while
+        print(f"{i:7d}/{max_steps:7d}: {loss.item():.4f}")
+    lossi.append(loss.log10().item())
+
+    break  # AFTER_DEBUG: would take out obviously to run full optimization
