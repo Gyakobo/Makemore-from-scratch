@@ -104,6 +104,8 @@ def build_dataset(words):
 
 n_embd = 10  # the dimensionality of the character embedding vectors
 n_hidden = 100  # the number of neurons in the hidden layer of the MLP
+random.seed(42)
+random.shuffle(words)
 n1 = int(0.8 * len(words))
 n2 = int(0.9 * len(words))
 Xtr, Ytr = build_dataset(words[:n1])  # Training split (80%)
