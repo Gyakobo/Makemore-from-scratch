@@ -109,12 +109,14 @@ for i in range(max_steps):
     embcat = emb.view(emb.shape[0], -1)  # concatenate the vectors
 
     """
-    Linear layer
+    Linear layer [WAKE layer]
     """
-    hpreact = embcat @ W1  # + b1  # hidden layer pre-activation - got rid of the bias1
+    hpreact = (
+        embcat @ W1
+    )  # + b1  # hidden layer pre-activation - got rid of the bias1. Could also be called "Convolution"
 
     """ 
-    Batch Normalization layer
+    Batch Normalization layer [NORMALIZATION layer]
     """
     bnmeani = hpreact.mean(0, keepdim=True)
     bnstdi = hpreact.std(0, keepdim=True)
@@ -126,7 +128,7 @@ for i in range(max_steps):
         bnstd_running = (0.999 * bnstd_running) + (0.001 * bnstdi)
 
     """
-    Non-linearity 
+    Non-linearity [NON-LINEARITY layer]
     """
     h = torch.tanh(hpreact)  # hidden layer
     logits = h @ W2 + b2  # output layer
