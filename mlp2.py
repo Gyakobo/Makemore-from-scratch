@@ -116,16 +116,22 @@ g = torch.Generator().manual_seed(2147483647)  # for reproducibility
 C = torch.randn((vocab_size, n_embd), generator=g)
 layers = [
     Linear(n_embd * block_size, n_hidden),
+    BatchNorm1d(n_hidden),
     Tanh(),
     Linear(n_hidden, n_hidden),
+    BatchNorm1d(n_hidden),
     Tanh(),
     Linear(n_hidden, n_hidden),
+    BatchNorm1d(n_hidden),
     Tanh(),
     Linear(n_hidden, n_hidden),
+    BatchNorm1d(n_hidden),
     Tanh(),
     Linear(n_hidden, n_hidden),
+    BatchNorm1d(n_hidden),
     Tanh(),
     Linear(n_hidden, vocab_size),
+    BatchNorm1d(n_hidden),
 ]
 
 with torch.no_grad():
