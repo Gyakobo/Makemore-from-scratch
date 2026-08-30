@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import random
 
-g = torch.Generator().manual_seed(2147483647)  # for reproducibility
+from mlp import vocab_size
 
 
 # Let's train a deeper network
@@ -59,3 +59,34 @@ class BatchNorm1d:
 
     def parameters(self):
         return [self.gamma, self.beta]
+
+
+class Tanh:
+    def __call__(self, x):
+        self.out = torch.tanh(x)
+        return self.out
+
+    def parameters(self):
+        return []
+
+
+block_size = 3  # the context size / block size
+n_embd = 10  # the dimensionality of the character embedding vectors
+n_hidden = 100  # the number of neurons in the hidden layer of the MLP
+g = torch.Generator().manual_seed(2147483647)  # for reproducibility
+vocab_size = 27
+
+C = torch.randn((vocab_size, n_embd), generator=g)
+layers = [
+    Linear(n_embd * block_size, n_hidden),
+    Tanh(),
+    Linear(n_hidden, n_hidden),
+    Tanh(),
+    Linear(n_hidden, n_hidden),
+    Tanh(),
+    Linear(n_hidden, n_hidden),
+    Tanh(),
+    Linear(n_hidden, n_hidden),
+    Tanh(),
+    Linear(n_hidden, vocab_size),
+]
