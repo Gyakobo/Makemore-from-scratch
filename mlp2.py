@@ -33,3 +33,29 @@ class BatchNorm1d:
         # parameters (trained with backprop)
         self.gamma = torch.ones(dim)
         self.beta = torch.zeros(dim)
+
+        # buffers (trained with a running 'momentum update')
+        self.running_mean = torch.zeros(dim)
+        self.running_var = torch.ones(dim)
+
+    def __call__(self, x):
+        # calculate the forward pass
+        if self.training:
+            xmean = x.mean(0, keepdim=True)  # batch mean
+            xvar = x.var(0, keepdim=True)  # batch variance
+        else:
+            xmean = self.running_mean
+            xvar = self.running_var
+        xhat = (x - xmean) / torch.sqrt(xvar + self.eps)  # normalize to unit variance
+        self.out = self.gamma * xhat + self.beta
+
+        # update the buffers
+        if self.training:
+            with torch.no_grad():
+                self.running_mean = (
+                    1 - self.momentum
+                ) * self.running_mean + self.momentum * xmean
+        return self.out
+
+    def parameters(self):
+        return [self.gamma, self.beta]
