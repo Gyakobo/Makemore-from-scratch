@@ -14,8 +14,9 @@ stoi["."] = 0
 itos = {i: s for s, i in stoi.items()}
 vocab_size = len(itos)
 
-
-# build the dataset
+"""
+Build the dataset
+"""
 block_size = (
     3  # context length: how many characters do we take to predict the next one?
 )
@@ -96,8 +97,9 @@ n = batch_size = 32  # just a short and convenient variable
 ix = torch.randint(0, Xtr.shape[0], (batch_size,), generator=g)
 Xb, Yb = Xtr[ix], Ytr[ix]  # batch X, Y
 
-
-# forward pass, "chunkated" into smaller steps that are possible to backward one at a time
+"""
+Forward pass, "chunkated" into smaller steps that are possible to backward one at a time
+"""
 emb = C[Xb]  # embed the characters into vectors
 embcat = emb.view(emb.shape[0], -1)  # concatenate the vectors
 
@@ -134,3 +136,38 @@ counts_sum_inv = (
 probs = counts * counts_sum_inv
 logprobs = probs.log()
 loss = -logprobs[range(n), Yb].mean()
+
+# PyTorch backward pass
+for p in parameters:
+    p.grad = None
+for t in [
+    logprobs,
+    probs,
+    counts,
+    counts_sum,
+    counts_sum_inv,
+    norm_logits,
+    logit_maxes,
+    logits,
+    h,
+    hpreact,
+    bnraw,
+    bnvar_inv,
+    bnvar,
+    bndiff2,
+    bndiff,
+    hprebn,
+    bnmeani,
+    embcat,
+    emb,
+]:
+    t.retain_grad()
+loss.backward()
+
+print(f"{loss=}")
+
+# Excersize 1: backprop through the whole thing manually,
+# backpropagating through exatly all of the variables
+# as they are defined in the forward pass above, one by one
+
+# dlogprobs = ???
