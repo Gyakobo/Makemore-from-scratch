@@ -72,7 +72,7 @@ bnmean_running = torch.zeros(
 bnstd_running = torch.ones((1, n_hidden))  # In the same fashion, the std would be 1
 
 
-parameters = [C, W1, b1, W2, b2, bngain, bnbias]  # All the utilized parameters
+parameters = [C, W1, W2, b2, bngain, bnbias]  # All the utilized parameters
 
 # lre = torch.linspace(-3, 0, 1000)
 # lrs = 10**lre

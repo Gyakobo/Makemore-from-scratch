@@ -71,8 +71,8 @@ W1 = (
     * (5 / 3)
     / ((n_embd * block_size) ** 0.5)
 )
-b1 = (
-    torch.randn(n_hidden, generator=g) * 0.1
+b1 = torch.randn(
+    n_hidden, generator=g
 )  # using b1 just for fun, it's useless because of BN(bnbias)
 
 # Layer 2
@@ -88,7 +88,7 @@ bnbias = torch.randn((1, n_hidden)) * 0.1
 # implementation of the backward pass.
 
 parameters = [C, W1, b1, W2, b2, bngain, bnbias]
-print(sum(p.element() for p in parameters))  # number of parameters in total
+print(sum(p.nelement() for p in parameters))  # number of parameters in total
 for p in parameters:
     p.requires_grad = True
 
@@ -112,7 +112,7 @@ bndiff = hprebn - bnmeani
 bndiff2 = bndiff**2
 bnvar = (
     1 / (n - 1) * (bndiff2).sum(0, keepdim=True)
-)  # note: Bessel's correction correction (dividing by n-1, not n)
+)  # note: Bessel's correction (dividing by n-1, not n)
 
 bnvar_inv = (bnvar + 1e-5) ** -0.5
 bnraw = bndiff * bnvar_inv
@@ -171,3 +171,5 @@ print(f"{loss=}")
 # as they are defined in the forward pass above, one by one
 
 # dlogprobs = ???
+
+cmp("logprobs", dlogprobs, logprobs)
