@@ -3,8 +3,6 @@ import random
 import torch.nn.functional as F
 import matplotlib as plt
 
-from mlp import vocab_size
-
 words = open("names.txt", "r").read().splitlines()
 
 # build the vocabulary of characters and mappings to/from integers
@@ -35,6 +33,7 @@ def build_dataset(words):
     X = torch.tensor(X)
     Y = torch.tensor(Y)
     print(X.shape, Y.shape)
+    return X, Y
 
 
 random.seed(42)
@@ -172,4 +171,4 @@ print(f"{loss=}")
 
 # dlogprobs = ???
 
-cmp("logprobs", dlogprobs, logprobs)
+# cmp("logprobs", dlogprobs, logprobs)
