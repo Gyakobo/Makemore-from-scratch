@@ -172,3 +172,4 @@ print(f"{loss=}")
 # dlogprobs = ???
 
 # cmp("logprobs", dlogprobs, logprobs)
+# cmp("probs", dprobs, probs)
