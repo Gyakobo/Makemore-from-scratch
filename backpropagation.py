@@ -30,6 +30,7 @@ def build_dataset(words):
             X.append(context)
             Y.append(ix)
             context = context[1:] + [ix]  # crop and append
+
     X = torch.tensor(X)
     Y = torch.tensor(Y)
     print(X.shape, Y.shape)
