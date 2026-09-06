@@ -126,7 +126,9 @@ logits = h @ W2 + b2  # output layer
 
 # cross entropy loss (same as F.cross_entropy(logits, Yb))
 logit_maxes = logits.max(1, keepdim=True).values
-norm_logits = logits - logit_maxes  # subtract max for numerical stability
+norm_logits = (
+    logits - logit_maxes
+)  # subtract max for numerical stability (done for safety)
 counts = norm_logits.exp()
 counts_sum = counts.sum(1, keepdim=True)
 counts_sum_inv = (
@@ -170,7 +172,18 @@ print(f"{loss=}")
 # backpropagating through exatly all of the variables
 # as they are defined in the forward pass above, one by one
 
-# dlogprobs = ???
+# 1) dlogprobs
+dlogprobs = torch.zeros_like(logprobs)
+dlogprobs[range(n), Yb] = -1.0 / n
 
-# cmp("logprobs", dlogprobs, logprobs)
-# cmp("probs", dprobs, probs)
+cmp("logprobs", dlogprobs, logprobs)
+
+# 2) dprobs
+dprobs = (1 / probs) * dlogprobs
+
+cmp("probs", dprobs, probs)
+
+# 3) dcounts_sum_inv
+dcounts_sum_inv = (1 / probs) * dlogprobs
+
+cmp("counts_sum_inv", dcounts_sum_inv, counts_sum_inv)
