@@ -171,7 +171,7 @@ for i in range(max_steps):
         layer.out.retain_grad()  # AFTER_DEBUG: would take out retiain_graph
     for p in parameters:
         p.grad = None
-    loss.backward()
+    loss.backward()  # Have to write this manually
 
     # update
     lr = 0.1 if i < 100000 else 0.01  # step learning rate decay

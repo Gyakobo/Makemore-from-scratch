@@ -72,7 +72,7 @@ bnmean_running = torch.zeros(
 bnstd_running = torch.ones((1, n_hidden))  # In the same fashion, the std would be 1
 
 
-parameters = [C, W1, b1, W2, b2, bngain, bnbias]  # All the utilized parameters
+parameters = [C, W1, W2, b2, bngain, bnbias]  # All the utilized parameters
 
 # lre = torch.linspace(-3, 0, 1000)
 # lrs = 10**lre
@@ -163,7 +163,7 @@ with torch.no_grad():
     # pass the training set though
     emb = C[Xtr]
     embcat = emb.view(emb.shape[0], -1)
-    hpreact = embcat @ W1 + b1
+    hpreact = embcat @ W1  # + b1
     # measure the mean/std over the entire training set
     bnmean = hpreact.mean(0, keepdim=True)
     bnstd = hpreact.std(0, keepdim=True)
@@ -182,7 +182,7 @@ def split_loss(split: str):
     }[split]
     emb = C[x]  # (N, block_size, n_embd)
     embcat = emb.view(emb.shape[0], -1)  # concat into (N, block_size * n_embd)
-    hpreact = embcat @ W1 + b1
+    hpreact = embcat @ W1  # + b1
     # hpreact = (
     #    bngain
     #    * (hpreact - hpreact.mean(0, keepdim=True))
@@ -190,7 +190,8 @@ def split_loss(split: str):
     #    + bnbias
     # )
     hpreact = bngain * (hpreact - bnmean_running) / bnstd_running + bnbias
-    h = torch.tanh(embcat @ W1 + b1)  # (N, n_hidden)
+    h = torch.tanh(embcat @ W1)  # (N, n_hidden)
+    # h = torch.tanh(embcat @ W1 + b1)  # (N, n_hidden)
     logits = h @ W2 + b2  # (N, vocab_size)
     loss = F.cross_entropy(logits, y)
     print(split, loss.item())
@@ -208,7 +209,8 @@ for _ in range(20):
     context = [0] * block_size  # initialize with all ...
     while True:
         emb = C[torch.tensor([context])]  # (1, block_size, d)
-        h = torch.tanh(emb.view(1, -1) @ W1 + b1)
+        h = torch.tanh(emb.view(1, -1) @ W1)
+        # h = torch.tanh(emb.view(1, -1) @ W1 + b1)
         logits = h @ W2 + b2
         probs = F.softmax(logits, dim=1)
         ix = torch.multinomial(probs, num_samples=1, generator=g).item()
