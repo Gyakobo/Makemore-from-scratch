@@ -184,6 +184,56 @@ dprobs = (1 / probs) * dlogprobs
 cmp("probs", dprobs, probs)
 
 # 3) dcounts_sum_inv
-dcounts_sum_inv = (1 / probs) * dlogprobs
+dcounts_sum_inv = (counts * dprobs).sum(1, keepdim=True)
 
 cmp("counts_sum_inv", dcounts_sum_inv, counts_sum_inv)
+
+# 4) dcounts
+
+dcounts = counts_sum_inv * dprobs
+
+cmp("counts_sum", dcounts_sum, counts_sum)
+
+# 5) dcounts_sum
+dcounts_sum = (-(counts_sum**-2)) * dcounts_sum_inv
+
+# 6) dcounts
+dcounts += torch.ones_like(counts) * dcounts_sum
+
+# 7) dnorm_logits
+dnorm_logits = (counts) * dcounts
+
+# 8) dlogits
+dlogits = dnorm_logits.clone()
+
+# 9) dlogit_maxes
+dlogit_maxes = (-dnorm_logits).sum(1, keepdim=True)
+
+# 10) logits
+dlogits += F.one_hot(logits.max().indices, num_classes=logits.shape[1]) * dlogit_maxes
+
+# 11) Backward pass for linear layer
+dh = dlogits @ W2.T
+dW2 = h.T @ dlogits
+db2 = dlogits.sum(0)
+
+# 12) dhpreact
+dhpreact = (1 - h**2) * dh
+
+# 13) dbngain
+dbngain = (bnraw * dhpreact).sum(0, keepdim=True)
+
+# 14) dbnraw
+dbnraw = bngain * dhpreact
+
+# 15) dbnbias
+dbnbias = dhpreact.sum(0, keepdim=True)
+
+# 16) dbndiff
+dbndiff = bnvar_inv * dbnraw
+dbnvar_inv = (dbndiff * dbnraw).sum(0, keepdim=True)
+
+# 17) dbnvar
+dbnvar = (-0.5 * (bnvar + 1e-5) ** -1.5) * dbnvar_inv
+
+# 18)
