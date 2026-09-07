@@ -3,8 +3,6 @@ import random
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-from mlp2 import BatchNorm1d  # for making figures
-
 random.seed(42)
 
 words = open("names.txt", "r").read().splitlines()
@@ -61,12 +59,13 @@ class Linear:
         self.out = x @ self.weight
         if self.bias is not None:
             self.out += self.bias
+        return self.out
 
     def parameters(self):
         return [self.weight] + ([] if self.bias is None else [self.bias])
 
 
-class BatcNorm1d:
+class BatchNorm1d:
     def __init__(self, dim, eps=1e-5, momentum=0.1):
         self.eps = eps
         self.momentum = momentum
@@ -154,6 +153,7 @@ for i in range(max_steps):
 
     # forward pass
     emb = C[Xb]  # embed the characters into vectors
+    x = emb.view(emb.shape[0], -1)  # concatenate the vectors
     for layer in layers:
         x = layer(x)
     loss = F.cross_entropy(x, Yb)  # loss function
