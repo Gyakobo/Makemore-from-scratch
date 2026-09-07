@@ -118,7 +118,9 @@ class Tanh:
 
 class Embedding:
     def __init__(self, num_embeddings, embedding_dim):
-        self.weight = torch.randn((num_embeddings, embedding_dim))
+        self.weight = torch.randn(
+            (num_embeddings, embedding_dim)
+        )  # vocab_size, No_ of dimensions
 
     def __call__(self, index):
         self.out = self.weight[index]
@@ -129,7 +131,7 @@ class Embedding:
 
 
 class Flatten:
-    def __init__(self, x):
+    def __call__(self, x):
         self.out = x.view(x.shape[0], -1)
         return self.out
 
@@ -137,14 +139,31 @@ class Flatten:
         return []
 
 
+class Sequential:
+    def __init__(self, layers):
+        self.layers = layers
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        self.out = x
+        return self.out
+
+    def parameters(self):
+        # get parameters of all layers and stretch them out into on list
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
 torch.manual_seed(42)  # seed rng for reproducibility
 
 n_embd = 10  # the dimensionality of the character embedding vectors
 n_hidden = 200  # the number of neurons in the hidden layer of the MLP
 
-C = torch.randn((vocab_size, n_embd))
+# C = torch.randn((vocab_size, n_embd))
 
 layers = [
+    Embedding(vocab_size, n_embd),
+    Flatten(),
     Linear(n_embd * block_size, n_hidden, bias=False),
     BatchNorm1d(n_hidden),
     Tanh(),
@@ -155,7 +174,8 @@ layers = [
 with torch.no_grad():
     layers[-1].weight *= 0.1  # last layer makes less confident
 
-parameters = [C] + [p for layer in layers for p in layer.parameters()]
+# parameters = [C] + [p for layer in layers for p in layer.parameters()]
+parameters = [p for layer in layers for p in layer.parameters()]
 print(
     "No_ of parameters:", sum(p.nelement() for p in parameters)
 )  # number of parameters in total
@@ -173,8 +193,9 @@ for i in range(max_steps):
     Xb, Yb = Xtr[ix], Ytr[ix]  # batch X, Y
 
     # forward pass
-    emb = C[Xb]  # embed the characters into vectors
-    x = emb.view(emb.shape[0], -1)  # concatenate the vectors
+    # emb = C[Xb]  # embed the characters into vectors
+    # x = emb.view(emb.shape[0], -1)  # concatenate the vectors
+    x = Xb
     for layer in layers:
         x = layer(x)
     loss = F.cross_entropy(x, Yb)  # loss function
@@ -204,8 +225,8 @@ for layer in layers:
 @torch.no_grad()  # this decorator disables gradient tracking inside pytorch
 def split_loss(split):
     x, y = {"train": (Xtr, Ytr), "val": (Xdev, Ydev), "test": (Xte, Yte)}[split]
-    emb = C[x]  # (N, block_size, n_embd)
-    x = emb.view(emb.shape[0], -1)  # concat into (N, block_size * n_embd)
+    # emb = C[x]  # (N, block_size, n_embd)
+    # x = emb.view(emb.shape[0], -1)  # concat into (N, block_size * n_embd)
     for layer in layers:
         x = layer(x)
     loss = F.cross_entropy(x, y)
@@ -221,8 +242,7 @@ for _ in range(20):
     context = [0] * block_size  # initialize with all...
     while True:
         # forward pass the neural net
-        emb = C[torch.tensor([context])]  # (1, block_size, n_embd)
-        x = emb.view(emb.shape[0], -1)  # concatenate the vectors
+        x = torch.tensor([context])  # (1, block_size), long tensor of indices
         for layer in layers:
             x = layer(x)
         logits = x
