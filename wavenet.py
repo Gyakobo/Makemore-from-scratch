@@ -174,7 +174,7 @@ model = Sequential(
 
 # parameter init
 with torch.no_grad():
-    layers[-1].weight *= 0.1  # last layer makes less confident
+    model.layers[-1].weight *= 0.1  # last layer makes less confident
 
 # parameters = [C] + [p for layer in layers for p in layer.parameters()]
 parameters = model.parameters()
@@ -200,8 +200,8 @@ for i in range(max_steps):
     # x = Xb
     # for layer in layers:
     #     x = layer(x)
-    # loss = F.cross_entropy(x, Yb)  # loss function
     logits = model(Xb)
+    loss = F.cross_entropy(logits, Yb)  # loss function
 
     # backward pass
     for p in parameters:
