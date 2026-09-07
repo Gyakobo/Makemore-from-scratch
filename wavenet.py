@@ -161,21 +161,23 @@ n_hidden = 200  # the number of neurons in the hidden layer of the MLP
 
 # C = torch.randn((vocab_size, n_embd))
 
-layers = [
-    Embedding(vocab_size, n_embd),
-    Flatten(),
-    Linear(n_embd * block_size, n_hidden, bias=False),
-    BatchNorm1d(n_hidden),
-    Tanh(),
-    Linear(n_hidden, vocab_size),
-]
+model = Sequential(
+    [
+        Embedding(vocab_size, n_embd),
+        Flatten(),
+        Linear(n_embd * block_size, n_hidden, bias=False),
+        BatchNorm1d(n_hidden),
+        Tanh(),
+        Linear(n_hidden, vocab_size),
+    ]
+)
 
 # parameter init
 with torch.no_grad():
     layers[-1].weight *= 0.1  # last layer makes less confident
 
 # parameters = [C] + [p for layer in layers for p in layer.parameters()]
-parameters = [p for layer in layers for p in layer.parameters()]
+parameters = model.parameters()
 print(
     "No_ of parameters:", sum(p.nelement() for p in parameters)
 )  # number of parameters in total
@@ -195,10 +197,11 @@ for i in range(max_steps):
     # forward pass
     # emb = C[Xb]  # embed the characters into vectors
     # x = emb.view(emb.shape[0], -1)  # concatenate the vectors
-    x = Xb
-    for layer in layers:
-        x = layer(x)
-    loss = F.cross_entropy(x, Yb)  # loss function
+    # x = Xb
+    # for layer in layers:
+    #     x = layer(x)
+    # loss = F.cross_entropy(x, Yb)  # loss function
+    logits = model(Xb)
 
     # backward pass
     for p in parameters:
@@ -217,7 +220,7 @@ for i in range(max_steps):
 
 
 # Put layers into eval mode (needed for batchnorm especially)
-for layer in layers:
+for layer in model.layers:
     layer.training = False
 
 
@@ -227,9 +230,8 @@ def split_loss(split):
     x, y = {"train": (Xtr, Ytr), "val": (Xdev, Ydev), "test": (Xte, Yte)}[split]
     # emb = C[x]  # (N, block_size, n_embd)
     # x = emb.view(emb.shape[0], -1)  # concat into (N, block_size * n_embd)
-    for layer in layers:
-        x = layer(x)
-    loss = F.cross_entropy(x, y)
+    logits = model(x)
+    loss = F.cross_entropy(logits, y)
     print(split, loss.item())
 
 
@@ -242,10 +244,7 @@ for _ in range(20):
     context = [0] * block_size  # initialize with all...
     while True:
         # forward pass the neural net
-        x = torch.tensor([context])  # (1, block_size), long tensor of indices
-        for layer in layers:
-            x = layer(x)
-        logits = x
+        logits = model(torch.tensor([context]))
         probs = F.softmax(logits, dim=1)
 
         # sample from the distribution
