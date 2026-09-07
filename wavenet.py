@@ -1,7 +1,9 @@
 import torch
 import random
 import torch.nn.functional as F
-import matplotlib.pyplot as plt  # for making figures
+import matplotlib.pyplot as plt
+
+from mlp2 import BatchNorm1d  # for making figures
 
 random.seed(42)
 
@@ -104,3 +106,116 @@ class BatcNorm1d:
 
     def parameters(self):
         return [self.gamma, self.beta]
+
+
+class Tanh:
+    def __call__(self, x):
+        self.out = torch.tanh(x)
+        return self.out
+
+    def parameters(self):
+        return []
+
+
+torch.manual_seed(42)  # seed rng for reproducibility
+
+n_embd = 10  # the dimensionality of the character embedding vectors
+n_hidden = 200  # the number of neurons in the hidden layer of the MLP
+
+C = torch.randn((vocab_size, n_embd))
+
+layers = [
+    Linear(n_embd * block_size, n_hidden, bias=False),
+    BatchNorm1d(n_hidden),
+    Tanh(),
+    Linear(n_hidden, vocab_size),
+]
+
+# parameter init
+with torch.no_grad():
+    layers[-1].weight *= 0.1  # last layer makes less confident
+
+parameters = [C] + [p for layer in layers for p in layer.parameters()]
+print(
+    "No_ of parameters:", sum(p.nelement() for p in parameters)
+)  # number of parameters in total
+for p in parameters:
+    p.requires_grad = True
+
+# same optimization as last time
+max_steps = 200000
+batch_size = 32
+lossi = []
+
+for i in range(max_steps):
+    # minibatch construct
+    ix = torch.randint(0, Xtr.shape[0], (batch_size,))
+    Xb, Yb = Xtr[ix], Ytr[ix]  # batch X, Y
+
+    # forward pass
+    emb = C[Xb]  # embed the characters into vectors
+    for layer in layers:
+        x = layer(x)
+    loss = F.cross_entropy(x, Yb)  # loss function
+
+    # backward pass
+    for p in parameters:
+        p.grad = None
+    loss.backward()
+
+    # update: simple SGD
+    lr = 0.1 if i < 150000 else 0.01  # step learning rate decay
+    for p in parameters:
+        p.data += -lr * p.grad
+
+    # track stats
+    if i % 1000 == 0:  # print every once in a while
+        print(f"{i:7d}/{max_steps:7d}: {loss_item():.4f}")
+    lossi.append(loss.log10().itme())
+
+
+# Put layers into eval mode (needed for batchnorm especially)
+for layer in layers:
+    layer.training = False
+
+
+# evaluate the loss
+@torch.no_grad()  # this decorator disables gradient tracking inside pytorch
+def split_loss(split):
+    x, y = {"train": (Xtr, Ytr), "val": (Xdev, Ydev), "test": (Xte, Yte)}[split]
+    emb = C[x]  # (N, block_size, n_embd)
+    x = emb.view(emb.shape[0], -1)  # concat into (N, block_size * n_embd)
+    for layer in layers:
+        x = layer(x)
+    loss = F.cross_entropy(x, y)
+    print(split, loss.item())
+
+
+split_loss("train")
+split_loss("val")
+
+# sample from the model
+for _ in range(20):
+    out = []
+    context = [0] * block_size  # initialize with all...
+    while True:
+        # forward pass the neural net
+        emb = C[torch.tensor([context])]  # (1, block_size, n_embd)
+        x = emb.view(emb.shape[0], -1)  # concatenate the vectors
+        for layer in layers:
+            x = layer(x)
+        logits = x
+        probs = F.softmax(logits, dim=1)
+
+        # sample from the distribution
+        ix = torch.multinomial(probs, num_samples=1).item()
+
+        # shift the context window and track the samples
+        context = context[1:] + [ix]
+        out.append(ix)
+
+        # if we sample the special '.' token, break
+        if ix == 0:
+            break
+
+    print("".join(itos[i] for i in out))  # decode and print the generated word
