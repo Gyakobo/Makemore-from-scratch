@@ -42,7 +42,7 @@ def build_dataset(words):
 n1 = int(0.8 * len(words))
 n2 = int(0.9 * len(words))
 Xtr, Ytr = build_dataset(words[:n1])  # 80%
-Xdev, Ydev = build_dataset(words[n2:n2])  # 10%
+Xdev, Ydev = build_dataset(words[n1:n2])  # 10%
 Xte, Yte = build_dataset(words[n2:])  # 10%
 
 for x, y in zip(Xtr[:20], Ytr[:20]):
@@ -170,8 +170,8 @@ for i in range(max_steps):
 
     # track stats
     if i % 1000 == 0:  # print every once in a while
-        print(f"{i:7d}/{max_steps:7d}: {loss_item():.4f}")
-    lossi.append(loss.log10().itme())
+        print(f"{i:7d}/{max_steps:7d}: {loss.item():.4f}")
+    lossi.append(loss.log10().item())
 
 
 # Put layers into eval mode (needed for batchnorm especially)
@@ -219,3 +219,9 @@ for _ in range(20):
             break
 
     print("".join(itos[i] for i in out))  # decode and print the generated word
+
+plt.plot(lossi)
+plt.show()
+
+plt.plot(torch.tensor(lossi).view(-1, 1000).mean(1))
+plt.show()
