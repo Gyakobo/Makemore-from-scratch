@@ -116,6 +116,27 @@ class Tanh:
         return []
 
 
+class Embedding:
+    def __init__(self, num_embeddings, embedding_dim):
+        self.weight = torch.randn((num_embeddings, embedding_dim))
+
+    def __call__(self, index):
+        self.out = self.weight[index]
+        return self.out
+
+    def parameters(self):
+        return [self.weight]
+
+
+class Flatten:
+    def __init__(self, x):
+        self.out = x.view(x.shape[0], -1)
+        return self.out
+
+    def parameters(self):
+        return []
+
+
 torch.manual_seed(42)  # seed rng for reproducibility
 
 n_embd = 10  # the dimensionality of the character embedding vectors
