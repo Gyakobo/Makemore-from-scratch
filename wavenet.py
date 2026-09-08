@@ -142,6 +142,7 @@ class FlattenConsecutive:
             x = x.squeeze(
                 1
             )  # Squeezes out the 1st dimension, if shape(B, 1, C*n) -> (B, C*n)
+            self.out = x
 
         return self.out
 
@@ -167,17 +168,29 @@ class Sequential:
 torch.manual_seed(42)  # seed rng for reproducibility
 
 n_embd = 10  # the dimensionality of the character embedding vectors
-n_hidden = 200  # the number of neurons in the hidden layer of the MLP
+n_hidden = 68  # the number of neurons in the hidden layer of the MLP
 
 # C = torch.randn((vocab_size, n_embd))
 
 model = Sequential(
     [
         Embedding(vocab_size, n_embd),
-        Flatten(),
-        Linear(n_embd * block_size, n_hidden, bias=False),
+        # --------------------
+        FlattenConsecutive(2),
+        Linear(n_embd * 2, n_hidden, bias=False),
         BatchNorm1d(n_hidden),
         Tanh(),
+        # --------------------
+        FlattenConsecutive(2),
+        Linear(n_hidden * 2, n_hidden, bias=False),
+        BatchNorm1d(n_hidden),
+        Tanh(),
+        # --------------------
+        FlattenConsecutive(2),
+        Linear(n_hidden * 2, n_hidden, bias=False),
+        BatchNorm1d(n_hidden),
+        Tanh(),
+        # --------------------
         Linear(n_hidden, vocab_size),
     ]
 )
