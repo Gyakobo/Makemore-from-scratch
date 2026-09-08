@@ -82,8 +82,13 @@ class BatchNorm1d:
     def __call__(self, x):
         # calculate the forward pass
         if self.training:
-            xmean = x.mean(0, keepdim=True)  # batch mean
-            xvar = x.var(0, keepdim=True)  # batch variance
+            if x.ndim == 2:
+                dim = 0
+            elif x.ndim == 3:
+                dim = (0, 1)
+
+            xmean = x.mean(dim, keepdim=True)  # batch mean
+            xvar = x.var(dim, keepdim=True)  # batch variance
 
         else:
             xmean = self.running_mean
@@ -167,8 +172,8 @@ class Sequential:
 
 torch.manual_seed(42)  # seed rng for reproducibility
 
-n_embd = 10  # the dimensionality of the character embedding vectors
-n_hidden = 68  # the number of neurons in the hidden layer of the MLP
+n_embd = 24  # the dimensionality of the character embedding vectors
+n_hidden = 128  # the number of neurons in the hidden layer of the MLP
 
 # C = torch.randn((vocab_size, n_embd))
 
