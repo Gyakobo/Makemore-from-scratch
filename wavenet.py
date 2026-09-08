@@ -135,14 +135,14 @@ class FlattenConsecutive:
         self.n = n
 
     def __call__(self, x):
-        B, T, C = x.shape()
-        self.out = x.view(x.shape[0], T // self.n, C * self.n)
+        B, T, C = x.shape
+        x = x.view(B, T // self.n, C * self.n)
 
         if x.shape[1] == 1:
             x = x.squeeze(
                 1
-            )  # Squeezes out the 1st dimension, if shape(B, 1, C*n) -> (B, C*n)
-            self.out = x
+            )  # Squeezes out the middle dimension: (B, 1, C*n) -> (B, C*n)
+        self.out = x
 
         return self.out
 
