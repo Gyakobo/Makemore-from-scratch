@@ -16,7 +16,7 @@ itos = {i: s for s, i in stoi.items()}
 vocab_size = len(itos)
 
 # build the dataset
-block_size = 3  # context length: how many char(s) do we take to predict the next one?
+block_size = 8  # context length: how many char(s) do we take to predict the next one?
 
 
 def build_dataset(words):
@@ -130,9 +130,19 @@ class Embedding:
         return [self.weight]
 
 
-class Flatten:
+class FlattenConsecutive:
+    def __init__(self, n):
+        self.n = n
+
     def __call__(self, x):
-        self.out = x.view(x.shape[0], -1)
+        B, T, C = x.shape()
+        self.out = x.view(x.shape[0], T // self.n, C * self.n)
+
+        if x.shape[1] == 1:
+            x = x.squeeze(
+                1
+            )  # Squeezes out the 1st dimension, if shape(B, 1, C*n) -> (B, C*n)
+
         return self.out
 
     def parameters(self):
