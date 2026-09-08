@@ -288,8 +288,8 @@ for _ in range(20):
 
     print("".join(itos[i] for i in out))  # decode and print the generated word
 
-plt.plot(lossi)
-plt.show()
+# plt.plot(lossi)
+# plt.show()
 
 plt.plot(torch.tensor(lossi).view(-1, 1000).mean(1))
 plt.show()
